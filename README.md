@@ -1,6 +1,6 @@
 # DarkAD
 
-![](imgs/cover.png)
+![](docs/cover.png)
 
 
 ### Installation 
@@ -15,19 +15,13 @@
 
 ### Data
 
-Edit `run.sh` to edit dataset class and dataset path.
-
-Download the dataset from [here](https://www.mvtec.com/company/research/datasets/mvtec-3d-ad).
+Download the dataset: [MVTec3d](https://www.mvtec.com/company/research/datasets/mvtec-3d-ad), [Insulator](https://github.com/InsulatorData/InsulatorDataSet), and [Clutch](https://owncloud.fraunhofer.de/index.php/s/mtr1FzERutdOrXi).
 
 The dataset folders/files follow its original structure.
 
 ### Run
 
 #### Demo train
-
-Please specicy dataset path (line1) and log folder (line10) in `run.sh` before running.
-
-`run.sh` gives the configuration to train models on MVTecAD dataset.
 ```
 bash run.sh
 ```
