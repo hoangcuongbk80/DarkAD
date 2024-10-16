@@ -17,6 +17,55 @@ from utils import plot_segmentation_images
 
 LOGGER = logging.getLogger(__name__)
 
+
+class DAFA(torch.nn.Module):
+    """
+    Dark-Aware Feature Adapter (DAFA) which includes:
+    1. Frequency-based Feature Enhancement (FFE)
+    2. Illumination-aware Feature Enhancement (IFE)
+    """
+    def __init__(self, in_channels):
+        super(DAFA, self).__init__()
+
+        # Frequency-based Feature Enhancement (FFE)
+        self.lp_conv = torch.nn.Conv2d(in_channels, in_channels, kernel_size=5, padding=2, bias=False)
+        torch.nn.init.normal_(self.lp_conv.weight, mean=0, std=0.02)
+
+        # Illumination-aware Feature Enhancement (IFE) components
+        self.illum_conv = torch.nn.Conv2d(1, in_channels, kernel_size=7, padding=3, bias=False)
+        torch.nn.init.xavier_normal_(self.illum_conv.weight)
+
+        self.spatial_attention = torch.nn.Conv2d(in_channels, 1, kernel_size=7, padding=3, bias=False)
+        torch.nn.init.xavier_normal_(self.spatial_attention.weight)
+
+        self.channel_attention = torch.nn.Sequential(
+            torch.nn.AdaptiveAvgPool2d(1),
+            torch.nn.Conv2d(in_channels, in_channels // 16, 1, bias=False),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(in_channels // 16, in_channels, 1, bias=False),
+            torch.nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        # Frequency-based Feature Enhancement (FFE)
+        low_pass_filtered = F.conv2d(x, self.lp_conv.weight, padding=2)
+        ffe_output = x + low_pass_filtered  # Fuse with original features
+
+        # Illumination-aware Feature Enhancement (IFE)
+        illum_map = torch.max(x, dim=1, keepdim=True)[0]  # Max-RGB Illumination Estimation
+        illum_features = self.illum_conv(illum_map)
+
+        # Spatial Attention
+        attention_map = torch.sigmoid(self.spatial_attention(illum_features))
+        ffe_output = ffe_output * attention_map  # Apply spatial attention
+
+        # Channel Attention
+        channel_attention_map = self.channel_attention(ffe_output)
+        final_output = ffe_output * channel_attention_map  # Apply channel attention
+
+        return final_output
+
+
 def init_weight(m):
 
     if isinstance(m, torch.nn.Linear):
